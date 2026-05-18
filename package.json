@@ -1,0 +1,11 @@
+{
+  "name": "pipegen",
+  "version": "1.0.0",
+  "description": "PipeGen — AI CI/CD Pipeline Generator (LLaMA 3.1 via Groq)",
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm start",
+    "dev": "npm run start:backend & npm run start:frontend"
+  }
+}

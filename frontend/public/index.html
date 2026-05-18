@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PipeGen — AI-Powered CI/CD Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<script type="module">
+  import { Renderer, Transform, Vec3, Color, Polyline } from 'https://cdn.jsdelivr.net/npm/ogl@1.0.11/+esm';
+  window.OGL = { Renderer, Transform, Vec3, Color, Polyline };
+</script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0d0202;
+  --bg2:     #170808;
+  --bg3:     #220d0d;
+  --bg4:     #2d1212;
+  --border:  rgba(255,255,255,0.05);
+  --border2: rgba(255,255,255,0.1);
+  --text:    #fff5f5;
+  --text2:   #c9a8a8;
+  --text3:   #7a5c5c;
+  --accent:  #ff4d4d;
+  --accent2: #d62828;
+  --green:   #34d47c;
+  --amber:   #f5a623;
+  --red:     #f04f4f;
+  --jenkins: #d33833;
+  --gh:      #ff4d4d;
+  --font:    'Sora', sans-serif;
+  --mono:    'JetBrains Mono', monospace;
+  --r:       10px;
+  --r2:      14px;
+}
+.light {
+  --bg:      #fffafa;
+  --bg2:     #ffffff;
+  --bg3:     #f8eeee;
+  --bg4:     #f0e0e0;
+  --border:  rgba(214,40,40,0.08);
+  --border2: rgba(214,40,40,0.15);
+  --text:    #2d0a0a;
+  --text2:   #7a4b4b;
+  --text3:   #b08d8d;
+  --accent:  #d62828;
+  --accent2: #9e1b1b;
+  --green:   #18b864;
+  --amber:   #c87d08;
+  --red:     #d42b2b;
+}
+
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.6; transition: background .25s, color .25s; }
+
+/* ── HEADER ── */
+.header { display:flex; align-items:center; justify-content:space-between; padding:14px 28px; background:var(--bg2); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; }
+.logo { display:flex; align-items:center; gap:10px; }
+.logo-icon { width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:18px; }
+.logo-name { font-size:16px; font-weight:700; letter-spacing:-0.4px; }
+.logo-tag { font-size:10px; font-family:var(--mono); background:var(--bg3); border:1px solid var(--border2); color:var(--text2); padding:2px 8px; border-radius:20px; }
+.hdr-right { display:flex; align-items:center; gap:10px; }
+.api-indicator { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text2); padding:5px 10px; background:var(--bg3); border:1px solid var(--border); border-radius:20px; }
+.api-dot { width:7px; height:7px; border-radius:50%; background:var(--text3); }
+.api-dot.connected { background:var(--green); }
+.theme-btn { background:var(--bg3); border:1px solid var(--border); color:var(--text2); padding:6px 13px; border-radius:20px; cursor:pointer; font-size:12px; font-family:var(--font); transition:all .2s; }
+.theme-btn:hover { color:var(--text); }
+
+/* ── STEPS NAV ── */
+.steps-nav { display:flex; align-items:center; padding:0 28px; background:var(--bg2); border-bottom:1px solid var(--border); overflow-x:auto; gap:0; }
+.step-item { display:flex; align-items:center; gap:7px; padding:12px 16px; cursor:pointer; font-size:12px; font-weight:500; color:var(--text3); border-bottom:2px solid transparent; transition:all .2s; white-space:nowrap; }
+.step-item.active { color:var(--accent); border-bottom-color:var(--accent); }
+.step-item.done { color:var(--green); }
+.step-num { width:20px; height:20px; border-radius:50%; background:var(--bg3); border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; font-size:10px; font-family:var(--mono); }
+.step-item.active .step-num { background:var(--accent); border-color:var(--accent); color:#fff; }
+.step-item.done .step-num { background:var(--green); border-color:var(--green); color:#fff; font-size:12px; }
+.step-arrow { color:var(--text3); padding:0 2px; }
+
+/* ── LAYOUT ── */
+.main { padding:28px; max-width:1100px; margin:0 auto; }
+.panel { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r2); overflow:hidden; margin-bottom:20px; }
+.panel-header { padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.panel-title { font-size:13px; font-weight:600; display:flex; align-items:center; gap:10px; }
+.panel-body { padding:22px; }
+
+/* ── TABS ── */
+.input-tabs { display:flex; gap:6px; margin-bottom:18px; }
+.tab-btn { padding:6px 14px; border-radius:20px; font-size:12px; font-weight:500; cursor:pointer; font-family:var(--font); border:1px solid var(--border2); background:transparent; color:var(--text2); transition:all .2s; }
+.tab-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.tab-btn:hover:not(.active) { color:var(--text); }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
+/* ── FORMS ── */
+textarea, input[type="text"], input[type="password"] {
+  width:100%; background:var(--bg3); border:1px solid var(--border2);
+  color:var(--text); font-family:var(--mono); font-size:12px;
+  border-radius:var(--r); padding:11px 13px; resize:vertical; outline:none;
+  transition:border .2s; line-height:1.65;
+}
+textarea { min-height:160px; }
+input[type="text"], input[type="password"] { font-family:var(--font); font-size:13px; resize:none; }
+textarea:focus, input:focus { border-color:var(--accent); }
+select { width:100%; background:var(--bg3); border:1px solid var(--border2); color:var(--text); font-family:var(--font); font-size:13px; border-radius:var(--r); padding:9px 12px; outline:none; cursor:pointer; }
+label.field-label { font-size:11px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; display:block; margin-bottom:7px; }
+
+/* ── CHIPS ── */
+.chip-group { display:flex; flex-wrap:wrap; gap:6px; }
+.chip { padding:5px 13px; border-radius:20px; font-size:12px; border:1px solid var(--border2); cursor:pointer; font-family:var(--font); background:var(--bg3); color:var(--text2); transition:all .2s; }
+.chip:hover { color:var(--text); }
+.chip.sel { border-color:var(--accent); color:var(--accent); background:rgba(79,142,247,.1); }
+.chip.sel.jenkins { border-color:var(--jenkins); color:var(--jenkins); background:rgba(211,56,51,.1); }
+
+/* ── CONFIG GRID ── */
+.cfg-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.cfg-group { display:flex; flex-direction:column; gap:0; }
+
+/* ── DROPZONE ── */
+.dropzone { border:1.5px dashed var(--border2); border-radius:var(--r2); padding:30px; text-align:center; cursor:pointer; transition:all .2s; background:var(--bg3); }
+.dropzone:hover, .dropzone.drag { border-color:var(--accent); background:rgba(79,142,247,.05); }
+.drop-icon { font-size:30px; margin-bottom:10px; }
+.drop-lbl { font-size:13px; color:var(--text2); } .drop-lbl span { color:var(--accent); font-weight:500; }
+.drop-sub { font-size:11px; color:var(--text3); margin-top:5px; }
+.file-list { display:flex; flex-direction:column; gap:4px; margin-top:12px; }
+.file-item { display:flex; align-items:center; gap:8px; padding:6px 10px; background:var(--bg3); border-radius:6px; font-family:var(--mono); font-size:11px; color:var(--text2); }
+
+/* ── DETECTION ── */
+.det-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+.det-card { background:var(--bg3); border:1px solid var(--border); border-radius:var(--r); padding:12px; }
+.det-lbl { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+.det-val { font-size:13px; font-weight:500; font-family:var(--mono); }
+.det-val.ok { color:var(--green); } .det-val.warn { color:var(--amber); } .det-val.none { color:var(--text3); }
+
+/* ── PROGRESS ── */
+.prog-wrap { margin:16px 0; }
+.prog-lbl { font-size:11px; color:var(--text2); margin-bottom:7px; display:flex; justify-content:space-between; }
+.prog-bar { height:3px; background:var(--bg3); border-radius:2px; overflow:hidden; }
+.prog-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:2px; transition:width .4s ease; }
+
+/* ── OUTPUT ── */
+.out-tabs { display:flex; border-bottom:1px solid var(--border); }
+.out-tab { padding:11px 18px; font-size:12px; font-weight:500; cursor:pointer; border-bottom:2px solid transparent; color:var(--text3); transition:all .2s; display:flex; align-items:center; gap:7px; }
+.out-tab.active { color:var(--text); border-bottom-color:var(--accent); }
+.out-badge { font-size:10px; padding:2px 7px; border-radius:20px; font-family:var(--mono); }
+.out-badge.jenkins { background:rgba(211,56,51,.15); color:var(--jenkins); }
+.out-badge.gh      { background:rgba(79,142,247,.15); color:var(--gh); }
+.code-block { background:var(--bg); border-radius:var(--r); padding:16px; font-family:var(--mono); font-size:11.5px; line-height:1.75; overflow:auto; max-height:420px; border:1px solid var(--border); white-space:pre; }
+.code-block .kw  { color:#c792ea; }
+.code-block .str { color:#c3e88d; }
+.code-block .cmt { color:#546e7a; font-style:italic; }
+.code-block .key { color:#82aaff; }
+.code-block .val { color:#f78c6c; }
+
+/* ── EXPLAIN ── */
+.explain-list { display:flex; flex-direction:column; gap:8px; }
+.explain-item { background:var(--bg3); border:1px solid var(--border); border-radius:var(--r); padding:11px 14px; display:flex; align-items:flex-start; gap:10px; }
+.ex-step { font-family:var(--mono); font-size:10px; color:var(--accent); background:rgba(79,142,247,.1); padding:3px 8px; border-radius:4px; white-space:nowrap; margin-top:2px; }
+.ex-title { font-size:13px; font-weight:500; margin-bottom:2px; }
+.ex-text  { font-size:12px; color:var(--text2); }
+
+/* ── CUSTOMIZE ── */
+.cust-wrap { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.cust-left { display:flex; flex-direction:column; gap:10px; }
+.cust-right { display:flex; flex-direction:column; gap:10px; }
+
+/* ── STATUS PILLS ── */
+.pill { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:500; }
+.pill.info    { background:rgba(79,142,247,.12); color:var(--accent); }
+.pill.success { background:rgba(52,212,124,.12); color:var(--green); }
+.pill.warn    { background:rgba(245,166,35,.12); color:var(--amber); }
+.dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+/* ── BUTTONS ── */
+.btn { padding:9px 20px; border-radius:var(--r); font-size:13px; font-weight:500; cursor:pointer; font-family:var(--font); border:none; transition:all .2s; display:inline-flex; align-items:center; gap:8px; }
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { opacity:.87; transform:translateY(-1px); }
+.btn-primary:disabled { opacity:.38; cursor:not-allowed; transform:none; }
+.btn-ghost { background:var(--bg3); border:1px solid var(--border2); color:var(--text2); }
+.btn-ghost:hover { color:var(--text); }
+.btn-sm { padding:6px 13px; font-size:12px; }
+.actions { display:flex; gap:10px; margin-top:20px; align-items:center; }
+.spacer { flex:1; }
+.sep { height:1px; background:var(--border); margin:16px 0; }
+.sec-title { font-size:11px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.6px; margin-bottom:11px; }
+.hint { font-size:11px; color:var(--text3); margin-top:7px; }
+
+/* ── API KEY BOX ── */
+.api-key-box { background:rgba(79,142,247,.06); border:1px solid rgba(79,142,247,.2); border-radius:var(--r2); padding:18px 20px; margin-bottom:20px; }
+.api-key-row { display:flex; gap:10px; align-items:center; }
+.api-key-row input { flex:1; }
+
+/* ── LOADING DOTS ── */
+.ldots span { animation:blink 1.2s infinite; }
+.ldots span:nth-child(2) { animation-delay:.2s; }
+.ldots span:nth-child(3) { animation-delay:.4s; }
+@keyframes blink { 0%,80%,100%{opacity:.15} 40%{opacity:1} }
+
+/* ── GEN LOADING ── */
+.gen-loading { text-align:center; padding:40px 20px; }
+.gen-icon { font-size:40px; margin-bottom:12px; }
+.gen-title { font-size:16px; font-weight:600; margin-bottom:6px; }
+.gen-sub { font-size:13px; color:var(--text2); margin-bottom:20px; }
+
+/* ── TOAST ── */
+.toast { position:fixed; bottom:24px; right:24px; background:var(--bg2); border:1px solid var(--border2); color:var(--text); padding:10px 18px; border-radius:var(--r); font-size:13px; opacity:0; transform:translateY(8px); transition:all .25s; pointer-events:none; z-index:999; display:flex; align-items:center; gap:8px; }
+.toast.show { opacity:1; transform:translateY(0); }
+
+.hidden { display:none !important; }
+
+/* ── MAGNET LINES BG ── */
+.magnetLines-bg {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  z-index: -1; pointer-events: none;
+  background: var(--bg);
+}
+#magnetCanvas {
+  display: block;
+}
+
+/* ── MAGIC BENTO ── */
+:root {
+  --hue: 27;
+  --sat: 69%;
+  --white: hsl(0, 0%, 100%);
+  --purple-primary: #ff4d4d; /* Adapted to our Red theme */
+  --purple-glow: rgba(255, 77, 77, 0.2);
+  --purple-border: rgba(255, 77, 77, 0.8);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --background-dark: #120F17;
+}
+.magic-bento-card {
+  display: flex; flex-direction: column; justify-content: space-between;
+  position: relative; padding: 1.5em; border-radius: 20px;
+  border: 1px solid var(--border-color);
+  background: rgba(18, 15, 23, 0.65); /* Glass effect */
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  transition: all 0.3s ease; overflow: hidden;
+  --glow-x: 50%; --glow-y: 50%; --glow-intensity: 0; --glow-radius: 300px;
+  z-index: 2;
+}
+
+/* ── RIBBONS ── */
+.ribbons-container {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  z-index: 1; pointer-events: none;
+}
+.card-grid { display: grid; gap: 15px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+
+/* ── ELECTRIC BORDERS ── */
+.electric-border {
+  --electric-border-color: #ff4d4d;
+  --electric-light-color: #ffcccc;
+  position: relative; border-radius: 20px; overflow: visible; isolation: isolate;
+}
+.eb-canvas-container {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 2;
+}
+.eb-canvas { display: block; position: absolute; top: -20px; left: -20px; width: calc(100% + 40px); height: calc(100% + 40px); }
+.eb-content { position: relative; border-radius: inherit; z-index: 1; }
+.eb-layers { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 0; }
+.eb-glow-1, .eb-glow-2, .eb-background-glow { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-sizing: border-box; }
+.eb-glow-1 { border: 2px solid rgba(255, 77, 77, 0.6); filter: blur(1px); }
+.eb-glow-2 { border: 2px solid var(--electric-border-color); filter: blur(4px); }
+.eb-background-glow { z-index: -1; transform: scale(1.05); filter: blur(20px); opacity: 0.15; background: linear-gradient(-30deg, var(--electric-border-color), transparent, var(--electric-border-color)); }
+</style>
+</head>
+<body>
+<div class="magnetLines-bg">
+  <canvas id="magnetCanvas"></canvas>
+</div>
+<div class="ribbons-container" id="ribbonsContainer"></div>
+<div id="app">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div class="logo-name">PipeGen</div>
+    <div class="logo-tag">LLaMA 3.1 · Groq</div>
+  </div>
+  <div class="hdr-right">
+    <div class="api-indicator" id="apiIndicator">
+      <div class="api-dot" id="apiDot"></div>
+      <span id="apiLabel">API not connected</span>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ Light</button>
+  </div>
+</div>
+
+<!-- STEPS NAV -->
+<div class="steps-nav">
+  <div class="step-item active" id="snav-2" onclick="tryGoStep(2)"><div class="step-num" id="snum-2">1</div> Input Project</div>
+  <div class="step-arrow">›</div>
+  <div class="step-item" id="snav-3" onclick="tryGoStep(3)"><div class="step-num" id="snum-3">2</div> Configure</div>
+  <div class="step-arrow">›</div>
+  <div class="step-item" id="snav-4" onclick="tryGoStep(4)"><div class="step-num" id="snum-4">3</div> Detection</div>
+  <div class="step-arrow">›</div>
+  <div class="step-item" id="snav-5" onclick="tryGoStep(5)"><div class="step-num" id="snum-5">4</div> Generate</div>
+  <div class="step-arrow">›</div>
+  <div class="step-item" id="snav-6" onclick="tryGoStep(6)"><div class="step-num" id="snum-6">5</div> Customize</div>
+  <div class="step-arrow">›</div>
+  <div class="step-item" id="snav-7" onclick="tryGoStep(7)"><div class="step-num" id="snum-7">6</div> Integration Plan</div>
+</div>
+
+<div class="main">
+
+<!-- ─── STEP 1 (Old Step 2): Input ──────────────────────────────────── -->
+<div id="step-2">
+  <div class="electric-border">
+    <div class="eb-canvas-container"><canvas class="eb-canvas"></canvas></div>
+    <div class="eb-layers"><div class="eb-glow-1"></div><div class="eb-glow-2"></div><div class="eb-background-glow"></div></div>
+    <div class="eb-content">
+      <div class="magic-bento-card magic-bento-card--border-glow" style="min-height:400px">
+        <div class="panel-header">
+          <div class="panel-title">📁 Project Input <div class="pill info"><div class="dot"></div>Step 1 of 6</div></div>
+        </div>
+    <div class="panel-body">
+      <div class="input-tabs">
+        <button class="tab-btn active" onclick="switchTab('paste')">📋 Paste Structure</button>
+        <button class="tab-btn" onclick="switchTab('upload')">📁 Upload Files / Folder</button>
+        <button class="tab-btn" onclick="switchTab('github')">🔗 GitHub URL</button>
+      </div>
+
+      <div class="tab-content active" id="tab-paste">
+        <label class="field-label">Paste file / folder structure or key file contents</label>
+        <textarea id="pasteInput" placeholder="my-project/
+├── src/
+│   ├── index.js
+│   └── app.js
+├── tests/
+│   └── app.test.js
+├── Dockerfile
+├── package.json
+└── .eslintrc.js
+
+Or paste the contents of package.json, requirements.txt, pom.xml etc."></textarea>
+        <div class="hint">💡 More context = better pipeline. Include package.json contents if possible.</div>
+      </div>
+
+      <div class="tab-content" id="tab-upload">
+        <div class="dropzone" id="dropzone"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="handleDrop(event)">
+          <div class="drop-icon">📂</div>
+          <div class="drop-lbl">Drop files/folders here or <span onclick="document.getElementById('fileInput').click()">browse files</span> / <span onclick="document.getElementById('folderInput').click()">select folder</span></div>
+          <div class="drop-sub">Upload your entire project directory for best results</div>
+        </div>
+        <input type="file" id="fileInput" multiple style="display:none" onchange="handleFiles(this.files)" />
+        <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none" onchange="handleFiles(this.files)" />
+        <div class="file-list" id="fileList"></div>
+      </div>
+
+      <div class="tab-content" id="tab-github">
+        <label class="field-label">GitHub Repository URL</label>
+        <input type="text" id="githubUrl" placeholder="https://github.com/username/my-project" />
+        <div class="hint">💡 Public repos only. The AI will analyse the project structure.</div>
+      </div>
+
+      <div class="actions">
+        <div class="spacer"></div>
+        <button class="btn btn-primary" onclick="tryGoStep(3)">Next: Configure →</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ─── STEP 2: Configure ───────────────────────────── -->
+<div id="step-3" class="hidden">
+  <div class="electric-border">
+    <div class="eb-canvas-container"><canvas class="eb-canvas"></canvas></div>
+    <div class="eb-layers"><div class="eb-glow-1"></div><div class="eb-glow-2"></div><div class="eb-background-glow"></div></div>
+    <div class="eb-content">
+      <div class="magic-bento-card magic-bento-card--border-glow" style="min-height:400px">
+        <div class="panel-header">
+          <div class="panel-title">⚙️ Configure Pipeline <div class="pill info"><div class="dot"></div>Step 2 of 6</div></div>
+        </div>
+    <div class="panel-body">
+      <div class="cfg-grid">
+        <div class="cfg-group">
+          <label class="field-label">CI/CD Tools</label>
+          <div class="chip-group">
+            <div class="chip sel jenkins" id="chip-jenkins" onclick="toggleChip('jenkins')">🔴 Jenkins</div>
+            <div class="chip sel" id="chip-gh" onclick="toggleChip('gh')">🔵 GitHub Actions</div>
+          </div>
+        </div>
+        <div class="cfg-group">
+          <label class="field-label">Deployment Target</label>
+          <select id="deployTarget">
+            <option value="aws">☁️ AWS (ECS / EC2)</option>
+            <option value="gcp">🌐 GCP (Cloud Run)</option>
+            <option value="azure">🔷 Azure (App Service)</option>
+            <option value="k8s">☸️ Kubernetes</option>
+            <option value="custom">🔧 Custom / Self-hosted</option>
+          </select>
+        </div>
+        <div class="cfg-group">
+          <label class="field-label">Environments</label>
+          <div class="chip-group">
+            <div class="chip sel" id="chip-dev"     onclick="toggleEnv('dev')">dev</div>
+            <div class="chip sel" id="chip-staging" onclick="toggleEnv('staging')">staging</div>
+            <div class="chip sel" id="chip-prod"    onclick="toggleEnv('prod')">prod</div>
+          </div>
+        </div>
+        <div class="cfg-group">
+          <label class="field-label">Branch Strategy</label>
+          <select id="branchStrategy">
+            <option value="gitflow">GitFlow (main + develop)</option>
+            <option value="trunk">Trunk-based (main only)</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div class="cfg-group">
+          <label class="field-label">Security Scanning</label>
+          <div class="chip-group">
+            <div class="chip sel" id="chip-sast"        onclick="toggleSec('sast')">SAST</div>
+            <div class="chip sel" id="chip-deps"        onclick="toggleSec('deps')">Dep Scan</div>
+            <div class="chip"     id="chip-docker-scan" onclick="toggleSec('docker-scan')">Docker Scan</div>
+            <div class="chip"     id="chip-secrets"     onclick="toggleSec('secrets')">Secret Detect</div>
+          </div>
+        </div>
+        <div class="cfg-group">
+          <label class="field-label">Container Registry</label>
+          <select id="registry">
+            <option value="ghcr">GitHub GHCR</option>
+            <option value="ecr">AWS ECR</option>
+            <option value="dockerhub">Docker Hub</option>
+            <option value="gcr">GCR</option>
+            <option value="acr">Azure ACR</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="tryGoStep(2)">← Back</button>
+        <div class="spacer"></div>
+        <button class="btn btn-primary" onclick="tryGoStep(4)">Analyse Project</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ─── STEP 3: Detection ─────────────────────────────── -->
+<div id="step-4" class="hidden">
+  <div class="electric-border">
+    <div class="eb-canvas-container"><canvas class="eb-canvas"></canvas></div>
+    <div class="eb-layers"><div class="eb-glow-1"></div><div class="eb-glow-2"></div><div class="eb-background-glow"></div></div>
+    <div class="eb-content">
+      <div class="magic-bento-card magic-bento-card--border-glow" style="min-height:400px">
+        <div class="panel-header">
+          <div class="panel-title">🔍 Detection Report <div class="pill info" id="detectPill"><div class="dot"></div>Analysing...</div></div>
+        </div>
+    <div class="panel-body">
+      <div class="prog-wrap" id="detectProg">
+        <div class="prog-lbl"><span id="progLabel">Scanning project...</span><span id="progPct">0%</span></div>
+        <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+      </div>
+      <div id="detectResults" class="hidden">
+        <div class="det-grid" id="detectGrid"></div>
+        <div class="sep"></div>
+        <div class="sec-title">What will be generated</div>
+        <div class="explain-list" id="detectNotes"></div>
+        <div class="actions">
+          <button class="btn btn-ghost" onclick="tryGoStep(3)">← Back</button>
+          <div class="spacer"></div>
+          <button class="btn btn-primary" onclick="tryGoStep(5)">Generate Pipeline ⚡</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ─── STEP 4 (Old Step 5): Output ────────────────────────────────── -->
+<div id="step-5" class="hidden">
+  <div class="electric-border">
+    <div class="eb-canvas-container"><canvas class="eb-canvas"></canvas></div>
+    <div class="eb-layers"><div class="eb-glow-1"></div><div class="eb-glow-2"></div><div class="eb-background-glow"></div></div>
+    <div class="eb-content">
+      <div class="magic-bento-card magic-bento-card--border-glow" style="min-height:500px">
+        <div class="panel-header">
+          <div class="panel-title">⚡ Generated Pipelines <div class="pill success" id="genPill"><div class="dot"></div>Ready</div></div>
+          <div style="display:flex;gap:8px" id="genActions" class="hidden">
+            <button class="btn btn-ghost btn-sm" onclick="copyCode()">📋 Copy</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadCode()">⬇️ Download</button>
+          </div>
+        </div>
+
+        <div class="gen-loading" id="genLoading">
+          <div class="gen-icon"><div class="ldots"><span>●</span><span>●</span><span>●</span></div></div>
+          <div class="gen-title">LLaMA 3.1 is writing your pipeline</div>
+          <div class="gen-sub" id="genStatusMsg">Connecting to Groq...</div>
+          <div class="prog-wrap" style="max-width:320px;margin:0 auto">
+            <div class="prog-bar"><div class="prog-fill" id="genProg" style="width:0%"></div></div>
+          </div>
+        </div>
+
+        <div id="genOutput" class="hidden">
+          <div class="out-tabs">
+            <div class="out-tab active" id="otab-jenkins" onclick="switchOutTab('jenkins')"><div class="out-badge jenkins">Jenkins</div>Jenkinsfile</div>
+            <div class="out-tab" id="otab-gh" onclick="switchOutTab('gh')"><div class="out-badge gh">GitHub Actions</div>ci.yml</div>
+            <div class="out-tab" id="otab-explain" onclick="switchOutTab('explain')">🧠 Explanation</div>
+          </div>
+          <div style="padding:16px">
+            <div id="out-jenkins"><pre class="code-block" id="jenkinsCode"></pre></div>
+            <div id="out-gh" class="hidden"><pre class="code-block" id="ghCode"></pre></div>
+            <div id="out-explain" class="hidden"><div class="explain-list" id="explainList"></div></div>
+          </div>
+          <div style="padding:0 16px 16px;display:flex;gap:10px">
+            <button class="btn btn-ghost" onclick="tryGoStep(1)">🔄 Start Over</button>
+            <div class="spacer"></div>
+            <button class="btn btn-primary" onclick="tryGoStep(6)">Customize Pipeline →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── STEP 5: Customize ─────────────────────────────── -->
+<div id="step-6" class="hidden">
+  <div class="electric-border">
+    <div class="eb-canvas-container"><canvas class="eb-canvas"></canvas></div>
+    <div class="eb-layers"><div class="eb-glow-1"></div><div class="eb-glow-2"></div><div class="eb-background-glow"></div></div>
+    <div class="eb-content">
+      <div class="magic-bento-card magic-bento-card--border-glow" style="min-height:500px">
+        <div class="panel-header">
+          <div class="panel-title">🛠️ Pipeline Customiser <div class="pill info"><div class="dot"></div>Beta</div></div>
+        </div>
+    <div class="panel-body">
+      <div class="cust-wrap">
+        <div class="cust-left">
+          <label class="field-label">Select pipeline to modify</label>
+          <select id="custTool">
+            <option value="jenkins">Jenkinsfile</option>
+            <option value="gh">GitHub Actions YAML</option>
+          </select>
+          <label class="field-label" style="margin-top:14px">What do you want to change?</label>
+          <textarea id="custInstruction" style="min-height:110px" placeholder="Examples:
+• Add a Slack notification on failure
+• Change deploy target from AWS ECS to Kubernetes
+• Add a manual approval gate before staging deploy
+• Add SonarQube code quality stage
+• Add Docker image vulnerability scan using Trivy"></textarea>
+          <button class="btn btn-primary" onclick="runCustomize()" id="custBtn">Apply Changes ⚡</button>
+        </div>
+        <div class="cust-right">
+          <label class="field-label">Updated pipeline</label>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <button class="btn btn-ghost btn-sm" onclick="copyCust()">📋 Copy</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadCust()">⬇️ Download</button>
+          </div>
+          <pre class="code-block" id="custOutput" style="max-height:360px;font-size:11px">← Your customised pipeline will appear here</pre>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="tryGoStep(5)">← Back to Output</button>
+        <div class="spacer"></div>
+        <button class="btn btn-primary" onclick="tryGoStep(7)">Next: Integration Plan →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── STEP 6 (Old Step 7): Integration Plan ────────────────────────── -->
+<div id="step-7" class="hidden">
+  <div class="electric-border">
+    <div class="eb-canvas-container"><canvas class="eb-canvas"></canvas></div>
+    <div class="eb-layers"><div class="eb-glow-1"></div><div class="eb-glow-2"></div><div class="eb-background-glow"></div></div>
+    <div class="eb-content">
+      <div class="magic-bento-card magic-bento-card--border-glow" style="min-height:500px">
+        <div class="panel-header">
+          <div class="panel-title">🗺️ Pipeline Integration Plan <div class="pill info"><div class="dot"></div>Final Step</div></div>
+        </div>
+        <div class="panel-body">
+          <div class="sec-title">1. Infrastructure & Secrets</div>
+          <p class="hint" style="margin-bottom:12px">Since your secrets are stored in a vault, ensure the following keys are mapped to your CI/CD environment variables:</p>
+          
+          <div class="det-grid" id="planSecrets">
+            <!-- Dynamic secrets list -->
+          </div>
+
+          <div class="sep"></div>
+          
+          <div class="sec-title">2. Implementation Steps</div>
+          <div class="explain-list" id="planSteps">
+            <!-- Dynamic steps list -->
+          </div>
+
+          <div class="sep"></div>
+          
+          <div class="sec-title">3. Pipeline Updates Required</div>
+          <div class="explain-list">
+            <div class="explain-item">
+              <div class="ex-step">CONFIG</div>
+              <div>
+                <div class="ex-title">Update Registry URLs</div>
+                <div class="ex-text">Replace placeholder registry URLs (e.g., <code>ghcr.io/your-org</code>) with your actual container registry paths.</div>
+              </div>
+            </div>
+            <div class="explain-item">
+              <div class="ex-step">ENV</div>
+              <div>
+                <div class="ex-title">Environment Variables</div>
+                <div class="ex-text">Ensure <code>APP_NAME</code>, <code>NODE_ENV</code>, and <code>PORT</code> are correctly set in the pipeline's global environment block.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-ghost" onclick="tryGoStep(6)">← Back</button>
+            <div class="spacer"></div>
+            <button class="btn btn-primary" onclick="window.print()">🖨️ Print Plan</button>
+            <button class="btn btn-ghost" onclick="tryGoStep(2)">🔄 Start Over</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /app -->
+
+<div class="toast" id="toast">✅ Copied!</div>
+
+<script>
+// Global State
+const API = 'http://localhost:3001';
+let isDark = true;
+let currentStep = 2;
+let groqKey = '';
+let detectedStack = {};
+let genJenkins = '';
+let genGH = '';
+let activeInput = 'paste';
+let uploadedFiles = [];
+let ciTools = { jenkins: true, gh: true };
+let envs = { dev: true, staging: true, prod: true };
+let sec = { sast: true, deps: true };
+let outTab = 'jenkins';
+let custResult = '';
+
+const sharedMouse = { x: 0, y: 0, nx: 0, ny: 0 }; // nx, ny are normalized -1 to 1
+
+// On Load
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('apiDot').classList.add('connected');
+  document.getElementById('apiLabel').textContent = 'Groq Connected (In-built)';
+  
+  window.addEventListener('mousemove', (e) => {
+    sharedMouse.x = e.clientX;
+    sharedMouse.y = e.clientY;
+    sharedMouse.nx = (e.clientX / window.innerWidth) * 2 - 1;
+    sharedMouse.ny = (e.clientY / window.innerHeight) * -2 + 1;
+    
+    // Bento Glow Effect
+    const cards = document.querySelectorAll('.magic-bento-card');
+    cards.forEach(card => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      card.style.setProperty('--glow-x', x + 'px');
+      card.style.setProperty('--glow-y', y + 'px');
+    });
+  });
+
+  initMagnetBg();
+  initElectricBorders();
+  
+  const checkOGL = setInterval(() => {
+    if (window.OGL) {
+      clearInterval(checkOGL);
+      initRibbons();
+    }
+  }, 50);
+});
+
+// ── Ribbons ──
+function initRibbons() {
+  const { Renderer, Transform, Vec3, Color, Polyline } = window.OGL;
+  const container = document.getElementById('ribbonsContainer');
+  if (!container) return;
+
+  const colors = ["#ff4d4d", "#d62828"];
+  const baseSpring = 0.02; // Reduced for more graceful follow
+  const baseFriction = 0.9; // Increased for smoother motion
+  const baseThickness = 18;
+  const offsetFactor = 0.05;
+  const maxAge = 600; // Increased for a longer tail
+  const pointCount = 60; // More points for a smoother curve
+  const speedMultiplier = 0.4; // Slower, more cinematic speed
+  const enableFade = true;
+  const enableShaderEffect = true;
+  const effectAmplitude = 2.0;
+
+  const renderer = new Renderer({ dpr: window.devicePixelRatio || 2, alpha: true });
+  const gl = renderer.gl;
+  gl.clearColor(0, 0, 0, 0);
+
+  gl.canvas.style.position = 'absolute';
+  gl.canvas.style.top = '0';
+  gl.canvas.style.left = '0';
+  gl.canvas.style.width = '100%';
+  gl.canvas.style.height = '100%';
+  container.appendChild(gl.canvas);
+
+  const scene = new Transform();
+  const lines = [];
+
+  const vertex = `
+    precision highp float;
+    attribute vec3 position;
+    attribute vec3 next;
+    attribute vec3 prev;
+    attribute vec2 uv;
+    attribute float side;
+    uniform vec2 uResolution;
+    uniform float uDPR;
+    uniform float uThickness;
+    uniform float uTime;
+    uniform float uEnableShaderEffect;
+    uniform float uEffectAmplitude;
+    varying vec2 vUV;
+    vec4 getPosition() {
+        vec4 current = vec4(position, 1.0);
+        vec2 aspect = vec2(uResolution.x / uResolution.y, 1.0);
+        vec2 nextScreen = next.xy * aspect;
+        vec2 prevScreen = prev.xy * aspect;
+        vec2 tangent = normalize(nextScreen - prevScreen);
+        vec2 normal = vec2(-tangent.y, tangent.x);
+        normal /= aspect;
+        normal *= mix(1.0, 0.1, pow(abs(uv.y - 0.5) * 2.0, 2.0));
+        float dist = length(nextScreen - prevScreen);
+        normal *= smoothstep(0.0, 0.02, dist);
+        float pixelWidthRatio = 1.0 / (uResolution.y / uDPR);
+        float pixelWidth = current.w * pixelWidthRatio;
+        normal *= pixelWidth * uThickness;
+        current.xy -= normal * side;
+        if(uEnableShaderEffect > 0.5) {
+          current.xy += normal * sin(uTime + current.x * 10.0) * uEffectAmplitude;
+        }
+        return current;
+    }
+    void main() {
+        vUV = uv;
+        gl_Position = getPosition();
+    }
+  `;
+
+  const fragment = `
+    precision highp float;
+    uniform vec3 uColor;
+    uniform float uOpacity;
+    uniform float uEnableFade;
+    varying vec2 vUV;
+    void main() {
+        float fadeFactor = 1.0;
+        if(uEnableFade > 0.5) {
+            fadeFactor = 1.0 - smoothstep(0.0, 1.0, vUV.y);
+        }
+        gl_FragColor = vec4(uColor, uOpacity * fadeFactor);
+    }
+  `;
+
+  function resize() {
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    renderer.setSize(width, height);
+    lines.forEach(line => line.polyline.resize());
+  }
+  window.addEventListener('resize', resize);
+
+  const center = (colors.length - 1) / 2;
+  colors.forEach((color, index) => {
+    const spring = baseSpring + (Math.random() - 0.5) * 0.05;
+    const friction = baseFriction + (Math.random() - 0.5) * 0.05;
+    const thickness = baseThickness + (Math.random() - 0.5) * 3;
+    const mouseOffset = new Vec3(
+      (index - center) * offsetFactor + (Math.random() - 0.5) * 0.01,
+      (Math.random() - 0.5) * 0.1,
+      0
+    );
+
+    const line = {
+      spring,
+      friction,
+      mouseVelocity: new Vec3(),
+      mouseOffset
+    };
+
+    const count = pointCount;
+    const points = [];
+    for (let i = 0; i < count; i++) points.push(new Vec3());
+    line.points = points;
+
+    line.polyline = new Polyline(gl, {
+      points,
+      vertex,
+      fragment,
+      uniforms: {
+        uColor: { value: new Color(color) },
+        uThickness: { value: thickness },
+        uOpacity: { value: 0.6 },
+        uTime: { value: 0.0 },
+        uEnableShaderEffect: { value: enableShaderEffect ? 1.0 : 0.0 },
+        uEffectAmplitude: { value: effectAmplitude },
+        uEnableFade: { value: enableFade ? 1.0 : 0.0 }
+      }
+    });
+    line.polyline.mesh.setParent(scene);
+    lines.push(line);
+  });
+
+  resize();
+
+  const mouse = new Vec3();
+  const tmp = new Vec3();
+  let lastTime = performance.now();
+  
+  function update() {
+    requestAnimationFrame(update);
+    const currentTime = performance.now();
+    const dt = currentTime - lastTime;
+    lastTime = currentTime;
+
+    mouse.set(sharedMouse.nx, sharedMouse.ny, 0);
+
+    lines.forEach(line => {
+      tmp.copy(mouse).add(line.mouseOffset).sub(line.points[0]).multiply(line.spring);
+      line.mouseVelocity.add(tmp).multiply(line.friction);
+      line.points[0].add(line.mouseVelocity);
+
+      for (let i = 1; i < line.points.length; i++) {
+        const segmentDelay = maxAge / (line.points.length - 1);
+        const alpha = Math.min(1, (dt * speedMultiplier) / segmentDelay);
+        line.points[i].lerp(line.points[i - 1], alpha);
+      }
+      if (line.polyline.mesh.program.uniforms.uTime) {
+        line.polyline.mesh.program.uniforms.uTime.value = currentTime * 0.001;
+      }
+      line.polyline.updateGeometry();
+    });
+    renderer.render({ scene });
+  }
+  update();
+}
+
+// ── Magnet Bg (Canvas Optimized) ──
+function initMagnetBg() {
+  const canvas = document.getElementById('magnetCanvas');
+  const ctx = canvas.getContext('2d');
+  const gap = 40;
+  let cols, rows;
+  
+  function resize() {
+    canvas.width = window.innerWidth * devicePixelRatio;
+    canvas.height = window.innerHeight * devicePixelRatio;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+    cols = Math.ceil(window.innerWidth / gap);
+    rows = Math.ceil(window.innerHeight / gap);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function draw() {
+    requestAnimationFrame(draw);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const mx = sharedMouse.x;
+    const my = sharedMouse.y;
+    
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--text3');
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    ctx.globalAlpha = 0.15;
+
+    for (let i = 0; i < cols; i++) {
+      for (let j = 0; j < rows; j++) {
+        const x = i * gap + gap / 2;
+        const y = j * gap + gap / 2;
+        
+        const angle = Math.atan2(my - y, mx - x);
+        
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        
+        ctx.beginPath();
+        ctx.moveTo(-10, 0);
+        ctx.lineTo(10, 0);
+        ctx.stroke();
+        
+        ctx.restore();
+      }
+    }
+  }
+  draw();
+}
+
+// ── Theme ──
+function toggleTheme() {
+  isDark = !isDark;
+  document.body.classList.toggle('light', !isDark);
+  document.getElementById('themeBtn').textContent = isDark ? '☀️ Light' : '🌙 Dark';
+}
+
+// ── Navigation ──
+function tryGoStep(n) {
+  if (n > 1 && !groqKey) { showToast('⚠️ Please connect your Groq API key first'); goStep(1); return; }
+  if (n === 4) { goStep(4); runDetection(); return; }
+  if (n === 5) { goStep(5); generatePipelines(); return; }
+  if (n === 7) { goStep(7); renderIntegrationPlan(); return; }
+  goStep(n);
+}
+
+function goStep(n) {
+  currentStep = n;
+  [2,3,4,5,6,7].forEach(i => {
+    const stepEl = document.getElementById('step-' + i);
+    if (stepEl) stepEl.classList.toggle('hidden', i !== n);
+    
+    const nav = document.getElementById('snav-' + i);
+    const num = document.getElementById('snum-' + i);
+    if (!nav) return;
+    nav.classList.toggle('active', i === n);
+    nav.classList.toggle('done', i < n);
+  });
+}
+
+// ── API Connect ──
+async function connectAPI() {
+  const key = document.getElementById('groqKey').value.trim();
+  if (!key) { showToast('⚠️ Enter your Groq API key'); return; }
+
+  const btn = document.querySelector('#step-1 .btn-primary');
+  const oldTxt = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ Verifying...';
+
+  try {
+    const res = await fetch(API + '/api/verify-key', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey: key })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    groqKey = key;
+    document.getElementById('apiDot').classList.add('connected');
+    document.getElementById('apiLabel').textContent = 'Groq connected';
+    showToast('✅ API key verified!');
+    goStep(2);
+  } catch (e) {
+    showToast('❌ ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = oldTxt;
+  }
+}
+
+// ── Tab switching ──
+function switchTab(t) {
+  activeInput = t;
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['paste','upload','github'][i] === t);
+  });
+  ['paste','upload','github'].forEach(id => {
+    document.getElementById('tab-' + id).classList.toggle('active', id === t);
+  });
+}
+
+// ── Chips ──
+function toggleChip(id) {
+  ciTools[id] = !ciTools[id];
+  const el = document.getElementById('chip-' + id);
+  el.classList.toggle('sel', ciTools[id]);
+  if (id === 'jenkins') el.classList.toggle('jenkins', ciTools[id]);
+}
+function toggleEnv(id) { envs[id] = !envs[id]; document.getElementById('chip-' + id).classList.toggle('sel', envs[id]); }
+function toggleSec(id) { sec[id] = !sec[id]; document.getElementById('chip-' + id).classList.toggle('sel', sec[id]); }
+
+// ── File upload ──
+async function handleFiles(files) {
+  uploadedFiles = [];
+  const fileArray = Array.from(files);
+  
+  for (const f of fileArray) {
+    const content = await readFileAsText(f);
+    uploadedFiles.push({ name: f.name, size: f.size, content });
+  }
+  renderFileList();
+}
+
+function readFileAsText(file) {
+  return new Promise((resolve) => {
+    // Only read small text files to avoid payload issues
+    if (file.size > 500000) return resolve("[File too large to read]");
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = () => resolve("[Error reading file]");
+    reader.readAsText(file);
+  });
+}
+
+function handleDrop(e) { 
+  e.preventDefault(); 
+  document.getElementById('dropzone').classList.remove('drag'); 
+  handleFiles(e.dataTransfer.files); 
+}
+
+function renderFileList() {
+  const count = uploadedFiles.length;
+  if (count === 0) { document.getElementById('fileList').innerHTML = ''; return; }
+  
+  document.getElementById('fileList').innerHTML = `
+    <div style="font-size:11px; color:var(--text3); margin-bottom:5px">Ready to analyse ${count} files...</div>
+    ${uploadedFiles.slice(0, 10).map(f =>
+      `<div class="file-item">📄 ${f.name} <span style="margin-left:auto;color:var(--text3)">${(f.size/1024).toFixed(1)}KB</span></div>`
+    ).join('')}
+    ${count > 10 ? `<div class="file-item" style="justify-content:center; color:var(--accent)">+ ${count - 10} more files</div>` : ''}
+  `;
+}
+
+// ── Get project input ──
+function getProjectInput() {
+  if (activeInput === 'paste') return document.getElementById('pasteInput').value;
+  if (activeInput === 'github') return document.getElementById('githubUrl').value;
+  // Send both filenames and contents for uploaded files
+  return uploadedFiles.map(f => `--- FILE: ${f.name} ---\n${f.content}`).join('\n\n');
+}
+
+// ── Detection ──
+async function runDetection() {
+  document.getElementById('detectProg').classList.remove('hidden');
+  document.getElementById('detectResults').classList.add('hidden');
+  document.getElementById('detectPill').innerHTML = '<div class="dot"></div>Analysing...';
+
+  const labels = [
+    [15,'Scanning file structure...'],
+    [35,'Detecting language & framework...'],
+    [55,'Analysing dependencies...'],
+    [75,'Checking Docker & IaC...'],
+    [90,'Evaluating test frameworks...'],
+    [100,'Done!'],
+  ];
+  let si = 0;
+  const iv = setInterval(() => {
+    if (si >= labels.length) { clearInterval(iv); return; }
+    const [p, lbl] = labels[si++];
+    document.getElementById('progFill').style.width = p + '%';
+    document.getElementById('progPct').textContent = p + '%';
+    document.getElementById('progLabel').textContent = lbl;
+    if (p === 100) setTimeout(showDetectResults, 300);
+  }, 350);
+
+  try {
+    const res = await fetch(API + '/api/detect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectInput: getProjectInput() })
+    });
+    const data = await res.json();
+    if (data.stack) detectedStack = data.stack;
+  } catch (e) {
+    detectedStack = localDetect(getProjectInput());
+  }
+}
+
+function localDetect(src) {
+  const s = src.toLowerCase();
+  let stack = { language:'Node.js', framework:'Node.js', packageMgr:'npm', testFw:'Jest', linter:'ESLint', docker:false, iac:null };
+  if (/package\.json|\.jsx?|\.tsx?|react|express|next/.test(s)) { stack.language='Node.js'; stack.framework=/react|next/.test(s)?'React/Next.js':/express/.test(s)?'Express':'Node.js'; }
+  else if (/pom\.xml|\.java|spring/.test(s)) { stack.language='Java'; stack.framework='Spring Boot'; stack.packageMgr='mvn'; stack.testFw='JUnit'; }
+  else if (/requirements\.txt|\.py|django|flask|fastapi/.test(s)) { stack.language='Python'; stack.framework=/django/.test(s)?'Django':/fastapi/.test(s)?'FastAPI':'Flask'; stack.packageMgr='pip'; stack.testFw='pytest'; }
+  else if (/go\.mod|\.go/.test(s)) { stack.language='Go'; stack.framework='Go'; stack.packageMgr='go mod'; stack.testFw='go test'; }
+  stack.docker = /dockerfile|docker-compose/.test(s);
+  stack.iac = /terraform/.test(s)?'Terraform':/helm/.test(s)?'Helm':null;
+  return stack;
+}
+
+function showDetectResults() {
+  document.getElementById('detectProg').classList.add('hidden');
+  document.getElementById('detectResults').classList.remove('hidden');
+  document.getElementById('detectPill').innerHTML = '<div class="dot" style="background:var(--green)"></div>Complete';
+
+  const s = detectedStack;
+  const cards = [
+    ['Language', s.language||'Unknown', 'ok'],
+    ['Framework', s.framework||'Unknown', 'ok'],
+    ['Package Mgr', s.packageMgr||'Unknown', 'ok'],
+    ['Test FW', s.testFw||'Unknown', 'ok'],
+    ['Docker', s.docker?'Found ✓':'Not found', s.docker?'ok':'warn'],
+    ['IaC', s.iac||'None', s.iac?'ok':'none'],
+  ];
+  document.getElementById('detectGrid').innerHTML = cards.map(([l,v,c]) =>
+    `<div class="det-card"><div class="det-lbl">${l}</div><div class="det-val ${c}">${v}</div></div>`
+  ).join('');
+
+  document.getElementById('detectNotes').innerHTML = `
+    <div class="explain-item"><div class="ex-step">BUILD</div><div><div class="ex-title">Install & Build</div><div class="ex-text">${s.packageMgr} install + build for ${s.framework}.</div></div></div>
+    <div class="explain-item"><div class="ex-step">TEST</div><div><div class="ex-title">${s.testFw} Tests</div><div class="ex-text">Full test suite with coverage reporting. Fail-fast on errors.</div></div></div>
+    ${s.docker?'<div class="explain-item"><div class="ex-step">DOCKER</div><div><div class="ex-title">Container Build & Push</div><div class="ex-text">Image built and pushed to configured registry tagged with commit SHA.</div></div></div>':''}
+    <div class="explain-item"><div class="ex-step">SECURITY</div><div><div class="ex-title">Security Gates</div><div class="ex-text">${Object.keys(sec).filter(k=>sec[k]).join(' + ')} scanning stages added.</div></div></div>
+    <div class="explain-item"><div class="ex-step">DEPLOY</div><div><div class="ex-title">Multi-env Deploy</div><div class="ex-text">Environments: ${Object.keys(envs).filter(k=>envs[k]).join(' → ')}. Production gated with manual approval.</div></div></div>
+  `;
+}
+
+// ── Generate ──
+async function generatePipelines() {
+  document.getElementById('genLoading').classList.remove('hidden');
+  document.getElementById('genOutput').classList.add('hidden');
+  document.getElementById('genActions').classList.add('hidden');
+
+  const msgs = [
+    [20,'Connecting to Groq API...'],
+    [45,'LLaMA 3.1 analysing your stack...'],
+    [65,'Writing pipeline stages...'],
+    [85,'Adding security & deploy steps...'],
+    [95,'Finalising...'],
+  ];
+  let mi = 0;
+  const iv = setInterval(() => {
+    if (mi >= msgs.length) { clearInterval(iv); return; }
+    const [p, m] = msgs[mi++];
+    document.getElementById('genProg').style.width = p + '%';
+    document.getElementById('genStatusMsg').textContent = m;
+  }, 600);
+
+  const body = {
+    projectInput: getProjectInput(),
+    stack: detectedStack,
+    deployTarget: document.getElementById('deployTarget').value,
+    branchStrategy: document.getElementById('branchStrategy').value,
+    environments: Object.keys(envs).filter(k => envs[k]),
+    security: Object.keys(sec).filter(k => sec[k]),
+    registry: document.getElementById('registry').value,
+    ciTools: Object.keys(ciTools).filter(k => ciTools[k]).map(k => k === 'gh' ? 'github-actions' : k),
+  };
+
+  try {
+    const res = await fetch(API + '/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Groq-Api-Key': groqKey },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    clearInterval(iv);
+    document.getElementById('genProg').style.width = '100%';
+    if (data.error) { showToast('❌ ' + data.error); return; }
+    genJenkins = data.jenkins || '';
+    genGH = data.githubActions || '';
+  } catch (e) {
+    clearInterval(iv);
+    genJenkins = fallbackJenkins(detectedStack);
+    genGH = fallbackGH(detectedStack);
+  }
+
+  setTimeout(showGenOutput, 400);
+}
+
+function showGenOutput() {
+  document.getElementById('genLoading').classList.add('hidden');
+  document.getElementById('genOutput').classList.remove('hidden');
+  document.getElementById('genActions').classList.remove('hidden');
+  document.getElementById('jenkinsCode').textContent = genJenkins;
+  document.getElementById('ghCode').textContent = genGH;
+
+  document.getElementById('explainList').innerHTML = [
+    ['CHECKOUT','Checkout','Clone repo at triggered commit SHA — ensures correct code version is built.'],
+    ['INSTALL','Install Dependencies',`${detectedStack.packageMgr} install with lock file for reproducible builds.`],
+    ['LINT','Code Quality',`${detectedStack.linter||'Linter'} static analysis catches style & syntax issues before tests.`],
+    ['TEST',`${detectedStack.testFw} Tests`,'Full suite with coverage. Build fails immediately on any failing test.'],
+    ['SECURITY','Security Scanning','SAST + dependency audit in parallel. High-severity findings block the build.'],
+    ['DOCKER','Container Build',`Docker image built & pushed tagged with commit SHA for full traceability.`],
+    ['DEPLOY','Branch-based Deploy','develop → Dev, release/* → Staging, main → Production (with manual gate).'],
+  ].map(([s,t,d]) => `<div class="explain-item"><div class="ex-step">${s}</div><div><div class="ex-title">${t}</div><div class="ex-text">${d}</div></div></div>`).join('');
+}
+
+// ── Output tab switch ──
+function switchOutTab(t) {
+  outTab = t;
+  ['jenkins','gh','explain'].forEach(id => {
+    document.getElementById('out-' + id).classList.toggle('hidden', id !== t);
+    document.getElementById('otab-' + id).classList.toggle('active', id === t);
+  });
+}
+
+// ── Customize ──
+async function runCustomize() {
+  const instr = document.getElementById('custInstruction').value.trim();
+  const tool = document.getElementById('custTool').value;
+  const pipeline = tool === 'jenkins' ? genJenkins : genGH;
+  if (!instr) { showToast('⚠️ Enter a customization instruction'); return; }
+  if (!pipeline) { showToast('⚠️ Generate a pipeline first'); return; }
+
+  document.getElementById('custBtn').disabled = true;
+  document.getElementById('custBtn').textContent = '⏳ Applying...';
+  document.getElementById('custOutput').textContent = 'LLaMA 3.1 is applying your changes...';
+
+  try {
+    const res = await fetch(API + '/api/customize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Groq-Api-Key': groqKey },
+      body: JSON.stringify({ pipeline, instruction: instr, tool: tool === 'jenkins' ? 'Jenkinsfile' : 'GitHub Actions' })
+    });
+    const data = await res.json();
+    custResult = data.pipeline || '';
+    document.getElementById('custOutput').textContent = custResult;
+    if (tool === 'jenkins') genJenkins = custResult;
+    else genGH = custResult;
+    showToast('✅ Pipeline updated!');
+  } catch (e) {
+    document.getElementById('custOutput').textContent = 'Error: ' + e.message;
+  }
+
+  document.getElementById('custBtn').disabled = false;
+  document.getElementById('custBtn').textContent = 'Apply Changes ⚡';
+}
+
+// ── Copy / Download ──
+function copyCode() {
+  const code = outTab === 'jenkins' ? genJenkins : genGH;
+  navigator.clipboard.writeText(code).catch(()=>{});
+  showToast('✅ Copied!');
+}
+function downloadCode() {
+  const isJ = outTab === 'jenkins';
+  dl(isJ ? genJenkins : genGH, isJ ? 'Jenkinsfile' : 'ci.yml');
+}
+function copyCust() { navigator.clipboard.writeText(custResult).catch(()=>{}); showToast('✅ Copied!'); }
+function downloadCust() {
+  const tool = document.getElementById('custTool').value;
+  dl(custResult, tool === 'jenkins' ? 'Jenkinsfile' : 'ci.yml');
+}
+
+async function renderIntegrationPlan() {
+  const planSecrets = document.getElementById('planSecrets');
+  const planSteps = document.getElementById('planSteps');
+  
+  planSecrets.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:20px; color:var(--text3)">⏳ AI is architecting your plan...</div>';
+  planSteps.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text3)">⏳ Building implementation steps...</div>';
+
+  try {
+    const res = await fetch(API + '/api/plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Groq-Api-Key': groqKey },
+      body: JSON.stringify({
+        stack: detectedStack,
+        deployTarget: document.getElementById('deployTarget').value,
+        registry: document.getElementById('registry').value,
+        ciTools: Object.keys(ciTools).filter(k => ciTools[k]),
+        security: Object.keys(sec).filter(k => sec[k])
+      })
+    });
+    const data = await res.json();
+    
+    if (data.secrets) {
+      planSecrets.innerHTML = data.secrets.map(sec => `
+        <div class="det-card">
+          <div class="det-lbl">${sec.cat || 'SECRET'}</div>
+          <div class="det-val" style="font-size:11px; color:var(--accent)">${sec.key}</div>
+          <div style="font-size:10px; color:var(--text3); margin-top:4px">${sec.desc}</div>
+        </div>
+      `).join('');
+    }
+
+    if (data.steps) {
+      planSteps.innerHTML = data.steps.map((st, i) => `
+        <div class="explain-item">
+          <div class="ex-step">0${i+1}</div>
+          <div>
+            <div class="ex-title">${st.title}</div>
+            <div class="ex-text">${st.text}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+  } catch (e) {
+    planSecrets.innerHTML = '<div style="color:var(--red)">Error generating plan</div>';
+    planSteps.innerHTML = '';
+  }
+}
+function dl(text, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type:'text/plain'}));
+  a.download = name; a.click();
+}
+
+// ── Toast ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ── Fallbacks ──
+function fallbackJenkins(s) {
+  return `pipeline {
+  agent any
+  environment {
+    APP_NAME   = 'my-app'
+    REGISTRY   = 'ghcr.io/your-org'
+    IMAGE_TAG  = "\${env.BUILD_NUMBER}"
+  }
+  stages {
+    stage('Checkout') { steps { checkout scm } }
+    stage('Install') {
+      steps { sh '${s.packageMgr === 'npm' ? 'npm ci' : s.packageMgr === 'mvn' ? 'mvn dependency:resolve' : 'pip install -r requirements.txt'}' }
+    }
+    stage('Lint') {
+      steps { sh '${s.linter && s.linter !== 'none' ? (s.language === 'Node.js' ? 'npm run lint' : 'flake8 .') : 'echo "No linter configured"'}' }
+    }
+    stage('Test') {
+      steps { sh '${s.packageMgr === 'npm' ? 'npm test -- --coverage' : s.language === 'Python' ? 'pytest --cov' : s.language === 'Java' ? 'mvn test' : 'go test ./...'}' }
+    }
+    stage('Security') {
+      parallel {
+        stage('SAST')      { steps { sh 'semgrep --config=auto .' } }
+        stage('Dep Audit') { steps { sh '${s.packageMgr === 'npm' ? 'npm audit --audit-level=high' : 'echo "dep scan"'}' } }
+      }
+    }
+    stage('Docker Build') {
+      steps {
+        sh 'docker build -t \$REGISTRY/\$APP_NAME:\$IMAGE_TAG .'
+        sh 'docker push \$REGISTRY/\$APP_NAME:\$IMAGE_TAG'
+      }
+    }
+    stage('Deploy Dev')     { when { branch 'develop' } steps { sh 'kubectl apply -f k8s/dev/' } }
+    stage('Deploy Staging') { when { branch 'release/*' } steps { sh 'kubectl apply -f k8s/staging/' } }
+    stage('Deploy Prod') {
+      when { branch 'main' }
+      input { message 'Deploy to production?' ok 'Deploy' }
+      steps { sh 'kubectl apply -f k8s/prod/' }
+    }
+  }
+  post {
+    failure { echo "Build FAILED: \${env.JOB_NAME} #\${env.BUILD_NUMBER}" }
+    success { echo "Build PASSED: \${env.JOB_NAME} #\${env.BUILD_NUMBER}" }
+  }
+}`;
+}
+
+function fallbackGH(s) {
+  return `name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop, 'release/*']
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: ${s.packageMgr === 'npm' ? 'npm ci' : s.packageMgr === 'pip' ? 'pip install -r requirements.txt' : 'mvn dependency:resolve'}
+      - name: Lint
+        run: ${s.language === 'Node.js' ? 'npm run lint' : s.language === 'Python' ? 'flake8 .' : 'echo lint'}
+      - name: Test
+        run: ${s.packageMgr === 'npm' ? 'npm test -- --ci' : s.language === 'Python' ? 'pytest --cov' : s.language === 'Java' ? 'mvn test' : 'go test ./...'}
+
+  security:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: returntocorp/semgrep-action@v1
+        with: { config: auto }
+      - run: ${s.packageMgr === 'npm' ? 'npm audit --audit-level=high' : 'echo "dep check"'}
+
+  build-push:
+    runs-on: ubuntu-latest
+    needs: security
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: \${{ github.actor }}
+          password: \${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: ghcr.io/\${{ github.repository }}:\${{ github.sha }}
+
+  deploy-dev:
+    needs: build-push
+    if: github.ref == 'refs/heads/develop'
+    environment: dev
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Deploying to Dev..."
+
+  deploy-prod:
+    needs: build-push
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Deploying to Production..."`;
+}
+function initElectricBorders() {
+  const containers = document.querySelectorAll('.electric-border');
+  
+  containers.forEach(container => {
+    const canvas = container.querySelector('.eb-canvas');
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    
+    let w, h;
+    function resize() {
+      const rect = container.getBoundingClientRect();
+      w = rect.width; h = rect.height;
+      canvas.width = (w + 40) * dpr;
+      canvas.height = (h + 40) * dpr;
+      ctx.scale(dpr, dpr);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const color = '#00f2ff'; // Cyan like the screenshot
+    const points = [];
+    const res = 4; // Higher = smoother/more detailed
+    
+    // Generate perimeter points
+    for(let i=0; i<w; i+=res) points.push({x: i+20, y: 20, normal: {x:0, y:-1}});
+    for(let i=0; i<h; i+=res) points.push({x: w+20, y: i+20, normal: {x:1, y:0}});
+    for(let i=w; i>0; i-=res) points.push({x: i+20, y: h+20, normal: {x:0, y:1}});
+    for(let i=h; i>0; i-=res) points.push({x: 20, y: i+20, normal: {x:-1, y:0}});
+
+    let time = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      time += 0.15;
+
+      function drawPath(offset, alpha, width, blur) {
+        ctx.globalAlpha = alpha;
+        ctx.lineWidth = width;
+        ctx.strokeStyle = color;
+        ctx.shadowBlur = blur;
+        ctx.shadowColor = color;
+        ctx.beginPath();
+        
+        points.forEach((p, i) => {
+          // Add jitter/noise
+          const noise = (Math.sin(i * 0.5 + time) * 2) + (Math.sin(i * 0.2 - time * 0.5) * 3);
+          const dx = p.x + p.normal.x * (noise + offset);
+          const dy = p.y + p.normal.y * (noise + offset);
+          if(i === 0) ctx.moveTo(dx, dy);
+          else ctx.lineTo(dx, dy);
+        });
+        ctx.closePath();
+        ctx.stroke();
+      }
+
+      // Draw 3 layers for the 'electric' glow effect
+      drawPath(0, 1.0, 1.5, 5);
+      drawPath(2, 0.4, 3, 15);
+      drawPath(-1, 0.6, 1, 2);
+    }
+    animate();
+  });
+}
+</script>
+</body>
+</html>

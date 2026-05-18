@@ -1,0 +1,210 @@
+/* =========================
+   GLOBAL RESET
+========================= */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* =========================
+   ROOT
+========================= */
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+/* =========================
+   BODY
+========================= */
+
+body {
+  background: #020617;
+
+  color: white;
+
+  font-family:
+    Inter,
+    system-ui,
+    sans-serif;
+
+  overflow-x: hidden;
+
+  position: relative;
+}
+
+/* =========================
+   PREMIUM SCROLLBAR
+========================= */
+
+::-webkit-scrollbar {
+  width: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.35);
+  border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.6);
+}
+
+/* =========================
+   ANIMATED BACKGROUND
+========================= */
+
+.global-dot-background {
+  position: fixed;
+
+  inset: 0;
+
+  width: 100vw;
+  height: 100vh;
+
+  z-index: 0;
+
+  overflow: hidden;
+
+  pointer-events: none;
+
+  background:
+    radial-gradient(circle at top,
+      rgba(124, 58, 237, 0.12),
+      transparent 45%),
+    #020617;
+}
+
+/* =========================
+   MAIN LAYOUT
+========================= */
+
+.app-layout {
+  width: 100%;
+
+  min-height: 100vh;
+
+  position: relative;
+
+  overflow-x: hidden;
+}
+
+/* =========================
+   MAIN CONTENT
+========================= */
+
+.main-content {
+  width: 100%;
+
+  min-height: 100vh;
+
+  position: relative;
+
+  z-index: 2;
+
+  overflow-x: hidden;
+
+  display: flex;
+  justify-content: center;
+}
+
+/* =========================
+   PAGE CONTENT
+========================= */
+
+.page-content {
+  width: 100%;
+
+  max-width: 1450px;
+
+  margin: 0 auto;
+
+  padding:
+    85px 32px 40px;
+
+  position: relative;
+
+  z-index: 2;
+}
+
+/* =========================
+   DASHBOARD MODE
+========================= */
+
+.dashboard-mode .page-content {
+  display: flex;
+
+  justify-content: center;
+
+  align-items: flex-start;
+}
+
+/* =========================
+   GLOBAL BUTTON EFFECTS
+========================= */
+
+.generate-btn,
+.next-btn,
+.action-btn {
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+
+  box-shadow:
+    0 0 20px rgba(124, 58, 237, 0.18);
+}
+
+.generate-btn:hover,
+.next-btn:hover,
+.action-btn:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 0 30px rgba(124, 58, 237, 0.35);
+}
+
+/* =========================
+   CODE BLOCK FIX
+========================= */
+
+pre,
+code {
+  overflow-x: auto;
+}
+
+img,
+video,
+canvas {
+  max-width: 100%;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media(max-width:992px) {
+
+  .page-content {
+    padding:
+      78px 20px 30px;
+  }
+}
+
+@media(max-width:640px) {
+
+  .page-content {
+    padding:
+      72px 14px 24px;
+  }
+}
