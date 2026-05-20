@@ -1,13 +1,12 @@
 import { useState } from "react";
-
-import Header from "./components/header/header";
-import Dashboard from "./components/dashboard/Dashboard";
-import ConfigurePipelinePage from "./components/configure/ConfigurePipelinePage";
-import GeneratePipelinePage from "./components/GeneratePipelinePage/GeneratePipelinePage";
-import CustomizePipeline from "./components/CustomizePipeline/CustomizePipeline";
-import DotField from "./components/Dotfield/Dotfield";
-import ImplementationPlan from "./components/ImplementationPlan/ImplementationPlan";
-import DeployGithub from "./components/DeployGithub/DeployGithub";
+import Header from "./components/header/header.jsx";
+import Dashboard from "./components/dashboard/Dashboard.jsx";
+import ConfigurePipelinePage from "./components/configure/ConfigurePipelinePage.jsx";
+import GeneratePipelinePage from "./components/GeneratePipelinePage/GeneratePipelinePage.jsx";
+import CustomizePipeline from "./components/CustomizePipeline/CustomizePipeline.jsx";
+import DotField from "./components/Dotfield/Dotfield.jsx";
+import ImplementationPlan from "./components/ImplementationPlan/ImplementationPlan.jsx";
+import DeployGithub from "./components/DeployGithub/DeployGithub.jsx";
 
 import "./App.css";
 
