@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import Header from "./components/header/header";
-import Dashboard from "./components/Dashboard/Dashboard";
+import Dashboard from "./components/dashboard/Dashboard";
 import ConfigurePipelinePage from "./components/configure/ConfigurePipelinePage";
 import GeneratePipelinePage from "./components/GeneratePipelinePage/GeneratePipelinePage";
 import CustomizePipeline from "./components/CustomizePipeline/CustomizePipeline";
