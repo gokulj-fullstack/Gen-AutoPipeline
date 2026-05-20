@@ -1,6 +1,8 @@
 import { useState } from "react";
 import "./ConfigurePipelinePage.css";
 
+const API_URL = "https://gen-autopipeline.onrender.com";
+
 export default function ConfigurePipelinePage({
   setCurrentStep,
   setGeneratedPipeline,
@@ -83,7 +85,7 @@ export default function ConfigurePipelinePage({
     try {
 
       const response = await fetch(
-        "http://127.0.0.1:8000/generate-pipeline/",
+        `${API_URL}/generate-pipeline/`,
         {
           method: "POST",
 

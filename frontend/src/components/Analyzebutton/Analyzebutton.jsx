@@ -1,6 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
 
+const API_URL = "https://gen-autopipeline.onrender.com";
+
 export default function AnalyzeButton({ setCurrentStep, githubUrl }) {
   const [loading, setLoading] = useState(false);
 
@@ -9,7 +11,7 @@ export default function AnalyzeButton({ setCurrentStep, githubUrl }) {
       setLoading(true);
 
       const response = await axios.post(
-        "http://127.0.0.1:8000/generate-pipeline/",
+        `${API_URL}/generate-pipeline/`,
         {
           github_url: githubUrl,
           framework: "React",
