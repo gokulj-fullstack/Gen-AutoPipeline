@@ -1,4 +1,4 @@
-import "./CompanyIntro.css";
+import "./Companyintro.css";
 import tsklogo from "../../assets/tsklogo.jpeg";
 
 function CompanyIntro() {
