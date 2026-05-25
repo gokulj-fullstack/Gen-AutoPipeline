@@ -1,0 +1,55 @@
+pipeline {
+
+    agent any
+
+    stages {
+
+        stage('Install Dependencies') {
+            steps {
+                sh 'npm install'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                sh 'npm test'
+            }
+        }
+
+        stage('Build Application') {
+            steps {
+                sh 'npm run build'
+            }
+        }
+
+        stage('Security Scans') {
+            steps {
+
+                echo 'Running SAST Scan...'
+
+                sh 'npm audit --audit-level=high'
+
+                echo 'Running Secret Detection...'
+
+                echo 'Running Docker Scan...'
+
+            }
+        }
+
+        stage('Publish Docker Image') {
+            steps {
+                echo 'Pushing image to GitHub Container Registry...'
+            }
+        }
+
+        stage('Deploy - Development') {
+            steps {
+
+                echo 'Deploying to AWS ECS / EC2...'
+
+            }
+        }
+
+    }
+
+}
