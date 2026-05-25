@@ -1,55 +1,71 @@
-pipeline {
+name: Smart CI/CD Pipeline
 
-    agent any
+on:
+  push:
+    branches: [main, develop, release/*]
+  workflow_dispatch:
 
-    stages {
+jobs:
 
-        stage('Install Dependencies') {
-            steps {
-                sh 'npm install'
-            }
-        }
+  build-and-test:
 
-        stage('Run Tests') {
-            steps {
-                sh 'npm test'
-            }
-        }
+    runs-on: ubuntu-latest
 
-        stage('Build Application') {
-            steps {
-                sh 'npm run build'
-            }
-        }
+    steps:
 
-        stage('Security Scans') {
-            steps {
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-                echo 'Running SAST Scan...'
+      - name: Cache Node Modules
+        uses: actions/cache@v3
 
-                sh 'npm audit --audit-level=high'
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
 
-                echo 'Running Secret Detection...'
+      - name: Install Dependencies
+        run: npm install
 
-                echo 'Running Docker Scan...'
+      - name: Run Tests
+        run: npm test
 
-            }
-        }
+      - name: Build Application
+        run: npm run build
 
-        stage('Publish Docker Image') {
-            steps {
-                echo 'Pushing image to GitHub Container Registry...'
-            }
-        }
+      - name: SAST Scan
+        run: echo "Running SAST Scan..."
 
-        stage('Deploy - Development') {
-            steps {
+      - name: Dependency Vulnerability Scan
+        run: npm audit --audit-level=high
 
-                echo 'Deploying to AWS ECS / EC2...'
+      - name: Build Docker Image
+        run: docker build -t myapp:latest .
 
-            }
-        }
+  publish:
 
-    }
+    needs: build-and-test
 
-}
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Push Image to GitHub Container Registry
+        run: echo "Pushing Docker image to GitHub Container Registry..."
+
+
+  deploy-development:
+
+    needs: publish
+
+    runs-on: ubuntu-latest
+
+    environment: Development
+
+    steps:
+
+      - name: Deploy to AWS ECS / EC2
+
+        run: echo "Deploying to AWS ECS..."
